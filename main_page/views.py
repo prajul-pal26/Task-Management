@@ -10,6 +10,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import re
 
+def index(request):
+    return render(request ,'index.html')
 
 def login(request):
     if request.method == "POST":
