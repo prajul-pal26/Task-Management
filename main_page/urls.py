@@ -1,12 +1,19 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path,include
+from rest_framework.routers import DefaultRouter
+from .views import AuthViewSet, EmployeeViewSet, TaskViewSet
 from . import views
 
+router = DefaultRouter()
+router.register(r'auth', AuthViewSet)
+router.register(r'employee', EmployeeViewSet)
+router.register(r'task', TaskViewSet)
+
+
 urlpatterns = [
-    path('hello',views.index,name='react'),
-    path('',views.login,name="index"),
-    path('login',views.login,name="login"),
-    path('signup',views.signup,name="signup"),
+    path('',include(router.urls),name="index"),
+    path('login/<int:id>/',views.login,name="login"),
+    path('signup/',views.signup,name="signup"),
         
     path('add-task/', views.add_task, name='add_task'),
     path('task_list', views.task_list, name='add_task'),

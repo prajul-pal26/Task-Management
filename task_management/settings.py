@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework',
     'main_page.apps.MainPageConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -56,7 +57,7 @@ ROOT_URLCONF = 'task_management.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR,"templates"),os.path.join(BASE_DIR,'REACT/myapp/build/templates')],
+        'DIRS': [os.path.join(BASE_DIR,'REACT/myapp/build/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

@@ -110,3 +110,9 @@ util.py
 model.py
 
 
+
+-------------------------------------  DOCKER ------------------------------------------
+BUILD UP  - docker-compose build
+RUN       - docker-compose up
+
+

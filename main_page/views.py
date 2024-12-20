@@ -2,68 +2,89 @@ from ast import Index
 from django.http import HttpResponse
 import datetime
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Task, Employee
-from .forms import TaskForm, EmployeeForm,UpdateForm, UpdateForm_employee
+from .models import authentication, Employee, Task
+# from .forms import TaskForm, EmployeeForm,UpdateForm, UpdateForm_employee
 from django.shortcuts import redirect, render
 from django.contrib.auth.models import User,auth
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import re
+from .serializers import AuthenticationModel, EmployeeModel, TaskModel
+from rest_framework import viewsets 
 
-def index(request):
-    return render(request ,'index.html')
 
-def login(request):
-    if request.method == "POST":
-        username=request.POST['username']  
-        password=request.POST['password']  
-        role = request.POST.get('role')
-        user=auth.authenticate(username=username,password=password)  
-        
-        if user is not None:
-            auth.login(request,user)           
-            return employer_dashboard(request) 
+class AuthViewSet(viewsets.ModelViewSet):
+    queryset = authentication.objects.all() 
+    serializer_class = AuthenticationModel
+
+class EmployeeViewSet(viewsets.ModelViewSet):
+    queryset = Employee.objects.all()  
+    serializer_class = EmployeeModel
+    
+class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.all()  
+    serializer_class = TaskModel
+
+def login(request, id):
+    request.session['is_logged_in']= False
+    if request.method == "POST" and 'name' in request.POST:
+        name=request.POST['name']    
+        email = request.POST.get('email')
+        user=authentication.objects.filter(name=name, email=email)
+    
+        if user:           
+            request.session['is_logged_in']= True
+            import email_sender
+            request.session['otp'] = email_sender.Email().send_email(send_email_to=email)
+            return render(request,"login.html",{'id': 1}) 
             
         else: 
             messages.info(request,'Credentials Invalid')
-            return redirect('login')        
+            return render(request,"login.html",{'id': 0})      
+         
+    elif request.method == "POST" and 'otp' in request.POST:
+        otp=request.POST['otp']    
+    
+        if otp == request.session['otp']:           
+            return HttpResponse("sedredsrfe")
+        else: 
+            messages.info(request,'Credentials Invalid')
+            return render(request,"login.html",{'id': 0}) 
         
-    return render(request,"login.html")
+    return render(request,"login.html",{'id': id})
 
 def signup(request):
     if request.method == "POST":
-        username=request.POST['username']  
+        name=request.POST['name']  
+        email = request.POST['email']
         password=request.POST['password']  
         password2=request.POST['password2'] 
-        phone_pattern = re.compile(r'^\d{10}$')
-
-        if not phone_pattern.match(username):
-            messages.info(request, "Username must be a 10-digit phone number.")
-            return redirect('signup')
         
         if password==password2:
             
-            if User.objects.filter(username=username).exists():
+            if authentication.objects.filter(name=name).exists():
                 messages.info(request,"username Taken")
                 return redirect('signup')
             else:
-                user=User.objects.create_user(username=username, password=password)
+                user=authentication.objects.create(name= name, email= email, password= password)
                 user.save()
-                user_login=auth.authenticate(username=username, password=password)
-                auth.login(request,user_login)
+                
                 return redirect("/login")
         else:
             messages.info(request,'Password Not Matching')
-            return redirect('signup') 
+            return redirect('signup')                                         
     else:
         return render(request, "signup.html")
 
+def hello(request):
+    return HttpResponse("Hello!")
 
-@login_required(login_url='login')
 def employer_dashboard(request):
-    tasks = Task.objects.filter(employer=request.user)
-    employees = Employee.objects.all() 
-    return render(request, 'employer_dashboard.html', {'tasks': tasks, 'employees': employees})
+    if request.session['is_logged_in'] is True:
+        tasks = Task.objects.filter(employer=request.user)
+        employees = Employee.objects.all() 
+        return render(request, 'employer_dashboard.html', {'tasks': tasks, 'employees': employees})
+    return render(request,"login.html")
 
 @login_required(login_url='login')
 def add_task(request):
